@@ -2656,7 +2656,8 @@ function run() {
             const configurationContent = yield fetchContent_1.default(client, configPath, github_1.context.repo.repo, github_1.context.repo.owner, github_1.context.sha);
             const config = yaml.safeLoad(configurationContent);
             const pr = github_1.context.payload.pull_request;
-            const errors = yield validate(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body);
+            const errors = yield validate(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
+            console.log('==errors==', errors);
             // await addFeedback(
             //   client,
             //   context.issue.number,
@@ -2677,8 +2678,31 @@ function run() {
         }
     });
 }
-function validate(config, title, body) {
-    console.log(config);
+function validate(config, title, body, branch) {
+    let errors = [];
+    for (const rule of config.rules) {
+        switch (rule.target) {
+            case 'title': {
+                if (!(title === null || title === void 0 ? void 0 : title.match(rule.pattern))) {
+                    errors = [...errors, rule.message.replace('{{title}}', title || 'null')];
+                }
+                break;
+            }
+            case 'body': {
+                if (!(body === null || body === void 0 ? void 0 : body.match(rule.pattern))) {
+                    errors = [...errors, rule.message.replace('{{body}}', body || 'null')];
+                }
+                break;
+            }
+            case 'branch': {
+                if (!(branch === null || branch === void 0 ? void 0 : branch.match(rule.pattern))) {
+                    errors = [...errors, rule.message.replace('{{branch}}', branch || 'null')];
+                }
+                break;
+            }
+        }
+    }
+    return errors;
 }
 run();
 
