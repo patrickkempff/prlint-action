@@ -1,0 +1,19 @@
+{
+  "extends": ["tuil/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 9,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "settings": {
+    "react": {
+        "version": "none"
+    }
+  },  
+  "env": {
+    "node": true,
+    "es6": true,
+    "jest/globals": true
+  }  
+}

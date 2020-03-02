@@ -1,0 +1,12 @@
+name: 'prlint'
+description: 'A GitHub action that checks that pull requests title, body, branch name matches regex patters.'
+author: 'Patrick Kempff <patrickkempff@gmail.com'
+inputs:
+  repo-token:
+    description: 'The GITHUB_TOKEN secret'
+  configuration-path:
+    description: 'The path for the pr lint configurations'
+    default: '.github/prlint.yml'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'

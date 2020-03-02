@@ -1,0 +1,47 @@
+{
+  "name": "prlint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A GitHub action to check the title, body and/or branch of a PR against regex patterns.",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write **/*.ts",
+    "format-check": "prettier --check **/*.ts",
+    "lint": "eslint src/**/*.ts",
+    "pack": "ncc build",
+    "test": "jest",
+    "all": "yarn build && yarn format && yarn lint && yarn pack && yarn test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patrickkempff/prlint-action"
+  },
+  "keywords": [
+    "actions",
+    "node",
+    "setup"
+  ],
+  "author": "Patrick Kempff <patrickkempff@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.2.0",
+    "@actions/github": "^2.1.1",
+    "js-yaml": "^3.13.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.23",
+    "@types/js-yaml": "^3.12.2",
+    "@types/node": "^12.7.12",
+    "@typescript-eslint/eslint-plugin": "^2.8.0",
+    "@typescript-eslint/parser": "^2.8.0",
+    "@zeit/ncc": "^0.20.5",
+    "eslint": "^6.0.1",
+    "eslint-config-tuil": "^0.6.0",
+    "jest": "^24.9.0",
+    "jest-circus": "^24.9.0",
+    "prettier": "^1.19.1",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.8.2"
+  }
+}
