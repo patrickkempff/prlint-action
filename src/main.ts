@@ -65,7 +65,7 @@ async function run(): Promise<void> {
 }
 
 function validate(config: any, title?: string, body?: string) {
-  config.log(config)
+  console.log(config)
 }
 
 run()

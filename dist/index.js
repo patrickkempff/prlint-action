@@ -2678,7 +2678,7 @@ function run() {
     });
 }
 function validate(config, title, body) {
-    config.log(config);
+    console.log(config);
 }
 run();
 
