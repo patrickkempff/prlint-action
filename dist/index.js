@@ -2641,7 +2641,10 @@ const core = __importStar(__webpack_require__(470));
 const github_1 = __webpack_require__(469);
 const yaml = __importStar(__webpack_require__(414));
 const assert_1 = __importDefault(__webpack_require__(71));
+const addFeedback_1 = __importDefault(__webpack_require__(342));
 const fetchContent_1 = __importDefault(__webpack_require__(730));
+const renderTable_1 = __importDefault(__webpack_require__(584));
+const validate_1 = __importDefault(__webpack_require__(474));
 const FEEDBACK_INDICATOR = `<!-- ci_comment_type: body-lint -->\n`;
 function run() {
     var _a;
@@ -2656,16 +2659,13 @@ function run() {
             const configurationContent = yield fetchContent_1.default(client, configPath, github_1.context.repo.repo, github_1.context.repo.owner, github_1.context.sha);
             const config = yaml.safeLoad(configurationContent);
             const pr = github_1.context.payload.pull_request;
-            const errors = yield validate(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
-            console.log('==errors==', errors);
-            // await addFeedback(
-            //   client,
-            //   context.issue.number,
-            //   context.issue.repo,
-            //   context.issue.owner,
-            //   FEEDBACK_INDICATOR,
-            //   'body'
-            // )
+            const errors = yield validate_1.default(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
+            let message = `:wave:\n`;
+            if (errors.length > 0) {
+                message += renderTable_1.default(['error'], errors.map(err => [err]));
+            }
+            console.log('==errors==', message);
+            yield addFeedback_1.default(client, github_1.context.issue.number, github_1.context.issue.repo, github_1.context.issue.owner, FEEDBACK_INDICATOR, `${FEEDBACK_INDICATOR}\n${message}`);
             // const ms: string = core.getInput('milliseconds')
             // core.debug(`Waiting ${ms} milliseconds ...`)
             // core.debug(new Date().toTimeString())
@@ -2677,32 +2677,6 @@ function run() {
             core.setFailed(error.message);
         }
     });
-}
-function validate(config, title, body, branch) {
-    let errors = [];
-    for (const rule of config.rules) {
-        switch (rule.target) {
-            case 'title': {
-                if (!(title === null || title === void 0 ? void 0 : title.match(rule.pattern))) {
-                    errors = [...errors, rule.message.replace('{{title}}', title || 'null')];
-                }
-                break;
-            }
-            case 'body': {
-                if (!(body === null || body === void 0 ? void 0 : body.match(rule.pattern))) {
-                    errors = [...errors, rule.message.replace('{{body}}', body || 'null')];
-                }
-                break;
-            }
-            case 'branch': {
-                if (!(branch === null || branch === void 0 ? void 0 : branch.match(rule.pattern))) {
-                    errors = [...errors, rule.message.replace('{{branch}}', branch || 'null')];
-                }
-                break;
-            }
-        }
-    }
-    return errors;
 }
 run();
 
@@ -4918,6 +4892,55 @@ function hasLastPage (link) {
   deprecate(`octokit.hasLastPage() – You can use octokit.paginate or async iterators instead: https://github.com/octokit/rest.js#pagination.`)
   return getPageLinks(link).last
 }
+
+
+/***/ }),
+
+/***/ 342:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+function addFeedback(client, issue_number, repo, owner, indicator, body) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Check if we need to update or create an new comment.    
+        // We do this is some steps;
+        //   1. get all comments and filter the comment based 
+        //      containing the indicator.
+        //   2. if it does not exist; create the comment
+        //   3. if it exist; update the comment.
+        const { data } = yield client.issues.listComments({ owner, repo, issue_number });
+        // will hold the comment id if there is a comment with 
+        // the given indicator
+        let comment_id = null;
+        for (const comment of data) {
+            // filter the comment based containing the indicator.
+            if (comment.body.includes(indicator)) {
+                comment_id = comment.id;
+                break;
+            }
+        }
+        if (comment_id === null) {
+            // 2. it does not exist; create the comment
+            return client.issues.createComment({ issue_number, owner, repo, body });
+        }
+        else {
+            // 3. it exist; update the comment.
+            return client.issues.updateComment({ comment_id, owner, repo, body });
+        }
+    });
+}
+exports.default = addFeedback;
 
 
 /***/ }),
@@ -9950,6 +9973,53 @@ function authenticationBeforeRequest(state, options) {
 
 /***/ }),
 
+/***/ 474:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const formatMessage_1 = __importDefault(__webpack_require__(930));
+var ConfigRuleTarget;
+(function (ConfigRuleTarget) {
+    ConfigRuleTarget["TITLE"] = "title";
+    ConfigRuleTarget["BODY"] = "body";
+    ConfigRuleTarget["BRANCH"] = "branch";
+})(ConfigRuleTarget = exports.ConfigRuleTarget || (exports.ConfigRuleTarget = {}));
+function validate(config, title, body, branch) {
+    let errors = [];
+    for (const rule of config.rules) {
+        switch (rule.target) {
+            case 'title': {
+                if (!title || !rule.pattern.test(title)) {
+                    errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
+                }
+                break;
+            }
+            case 'body': {
+                if (!body || !rule.pattern.test(body)) {
+                    errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
+                }
+                break;
+            }
+            case 'branch': {
+                if (!branch || !rule.pattern.test(branch)) {
+                    errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
+                }
+                break;
+            }
+        }
+    }
+    return errors;
+}
+exports.default = validate;
+
+
+/***/ }),
+
 /***/ 489:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -11029,6 +11099,25 @@ module.exports = new Schema({
     __webpack_require__(988)
   ]
 });
+
+
+/***/ }),
+
+/***/ 584:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function renderTable(header, rows) {
+    let table = `|${header.join('|')}\n`;
+    table += `|${header.forEach(_ => '--- |')}\n`;
+    for (const row of rows) {
+        table += `|${row.join('|')}\n`;
+    }
+    return table;
+}
+exports.default = renderTable;
 
 
 /***/ }),
@@ -28802,6 +28891,23 @@ function hasNextPage (link) {
   deprecate(`octokit.hasNextPage() – You can use octokit.paginate or async iterators instead: https://github.com/octokit/rest.js#pagination.`)
   return getPageLinks(link).next
 }
+
+
+/***/ }),
+
+/***/ 930:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function formatMessage(message, title, body, branch) {
+    return message
+        .replace('{{title}}', title || 'null')
+        .replace('{{body}}', body || 'null')
+        .replace('{{branch}}', branch || 'null');
+}
+exports.default = formatMessage;
 
 
 /***/ }),
