@@ -2745,7 +2745,7 @@ function run() {
             let message = `${reportIntro}`;
             if (errors.length > 0) {
                 message += `\n\n`;
-                message += markdown_table_1.default([[reportTitle], ...errors.map(err => [err]),], { align: ['l'] });
+                message += markdown_table_1.default([['', reportTitle], ...errors.map(err => [':no_entry_sign:', err]),], { align: ['l', 'l'] });
             }
             if (reportMessage) {
                 message += `\n\n${formatMessage_1.default(reportMessage, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref, github_1.context.sha)}`;
