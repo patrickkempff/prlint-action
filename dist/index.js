@@ -2722,14 +2722,18 @@ const markdown_table_1 = __importDefault(__webpack_require__(366));
 const assert_1 = __importDefault(__webpack_require__(71));
 const addFeedback_1 = __importDefault(__webpack_require__(342));
 const fetchContent_1 = __importDefault(__webpack_require__(730));
+const formatMessage_1 = __importDefault(__webpack_require__(930));
 const validate_1 = __importDefault(__webpack_require__(474));
-const FEEDBACK_INDICATOR = `<!-- ci_comment_type: body-lint -->\n`;
+const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`;
 function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput('repo-token', { required: true });
             const configPath = core.getInput('configuration-path', { required: true });
+            const reportTitle = core.getInput('report-title', { required: true });
+            const reportIntro = core.getInput('report-intro', { required: true });
+            const reportMessage = core.getInput('report-message', { required: true });
             const prId = (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
             assert_1.default(typeof prId === 'number', 'Could not get pull request number from context, exiting');
             const client = new github_1.GitHub(token);
@@ -2738,11 +2742,14 @@ function run() {
             const config = yaml.safeLoad(configurationContent);
             const pr = github_1.context.payload.pull_request;
             const errors = yield validate_1.default(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
-            let message = `:wave:\n`;
+            let message = reportIntro;
             if (errors.length > 0) {
-                message += markdown_table_1.default([['Fail'], ...errors.map(err => [err]),]);
+                message += markdown_table_1.default([[reportTitle], ...errors.map(err => [err]),], { align: ['l'] });
             }
-            yield addFeedback_1.default(client, github_1.context.issue.number, github_1.context.issue.repo, github_1.context.issue.owner, FEEDBACK_INDICATOR, `${FEEDBACK_INDICATOR}\n${message}`);
+            if (reportMessage) {
+                message += `\n\n${formatMessage_1.default(reportMessage, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref, github_1.context.sha)}`;
+            }
+            yield addFeedback_1.default(client, github_1.context.issue.number, github_1.context.issue.repo, github_1.context.issue.owner, FEEDBACK_INDICATOR, message);
             // const ms: string = core.getInput('milliseconds')
             // core.debug(`Waiting ${ms} milliseconds ...`)
             // core.debug(new Date().toTimeString())
@@ -5009,11 +5016,11 @@ function addFeedback(client, issue_number, repo, owner, indicator, body) {
         }
         if (comment_id === null) {
             // 2. it does not exist; create the comment
-            return client.issues.createComment({ issue_number, owner, repo, body });
+            return client.issues.createComment({ issue_number, owner, repo, body: `${indicator}\n\n${body}` });
         }
         else {
             // 3. it exist; update the comment.
-            return client.issues.updateComment({ comment_id, owner, repo, body });
+            return client.issues.updateComment({ comment_id, owner, repo, body: `${indicator}\n\n${body}` });
         }
     });
 }
@@ -29216,11 +29223,12 @@ function hasNextPage (link) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function formatMessage(message, title, body, branch) {
+function formatMessage(message, title, body, branch, commit) {
     return message
         .replace('{{title}}', title || 'null')
         .replace('{{body}}', body || 'null')
         .replace('{{branch}}', branch || 'null')
+        .replace('{{commit}}', commit || 'null')
         .replace(/^\s+|\s+$/g, '');
 }
 exports.default = formatMessage;
