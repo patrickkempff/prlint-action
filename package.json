@@ -9,7 +9,7 @@
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
-    "pack": "ncc build",
+    "package": "ncc build",
     "test": "jest",
     "all": "yarn build && yarn format && yarn lint && yarn pack && yarn test"
   },
@@ -27,7 +27,8 @@
   "dependencies": {
     "@actions/core": "^1.2.0",
     "@actions/github": "^2.1.1",
-    "js-yaml": "^3.13.1"
+    "js-yaml": "^3.13.1",
+    "markdown-table": "^2.0.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.23",
