@@ -2743,6 +2743,9 @@ function run() {
             const pr = github_1.context.payload.pull_request;
             const errors = yield validate_1.default(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
             let message = reportIntro;
+            if (reportIntro) {
+                message += `\n\n`;
+            }
             if (errors.length > 0) {
                 message += markdown_table_1.default([[reportTitle], ...errors.map(err => [err]),], { align: ['l'] });
             }
