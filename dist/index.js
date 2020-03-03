@@ -2742,23 +2742,15 @@ function run() {
             const config = yaml.safeLoad(configurationContent);
             const pr = github_1.context.payload.pull_request;
             const errors = yield validate_1.default(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
-            let message = reportIntro;
-            if (reportIntro) {
-                message += `\n\n`;
-            }
+            let message = `${reportIntro}`;
             if (errors.length > 0) {
+                message += `\n\n`;
                 message += markdown_table_1.default([[reportTitle], ...errors.map(err => [err]),], { align: ['l'] });
             }
             if (reportMessage) {
                 message += `\n\n${formatMessage_1.default(reportMessage, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref, github_1.context.sha)}`;
             }
             yield addFeedback_1.default(client, github_1.context.issue.number, github_1.context.issue.repo, github_1.context.issue.owner, FEEDBACK_INDICATOR, message);
-            // const ms: string = core.getInput('milliseconds')
-            // core.debug(`Waiting ${ms} milliseconds ...`)
-            // core.debug(new Date().toTimeString())
-            // await wait(parseInt(ms, 10))
-            // core.debug(new Date().toTimeString())
-            // core.setOutput('time', new Date().toTimeString())
         }
         catch (error) {
             core.setFailed(error.message);
