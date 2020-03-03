@@ -29220,7 +29220,8 @@ function formatMessage(message, title, body, branch) {
     return message
         .replace('{{title}}', title || 'null')
         .replace('{{body}}', body || 'null')
-        .replace('{{branch}}', branch || 'null');
+        .replace('{{branch}}', branch || 'null')
+        .replace(/^\s+|\s+$/g, '');
 }
 exports.default = formatMessage;
 
