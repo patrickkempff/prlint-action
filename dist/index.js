@@ -2664,7 +2664,6 @@ function run() {
             if (errors.length > 0) {
                 message += renderTable_1.default(['error'], errors.map(err => [err]));
             }
-            console.log('==errors==', message);
             yield addFeedback_1.default(client, github_1.context.issue.number, github_1.context.issue.repo, github_1.context.issue.owner, FEEDBACK_INDICATOR, `${FEEDBACK_INDICATOR}\n${message}`);
             // const ms: string = core.getInput('milliseconds')
             // core.debug(`Waiting ${ms} milliseconds ...`)
@@ -9994,19 +9993,19 @@ function validate(config, title, body, branch) {
     for (const rule of config.rules) {
         switch (rule.target) {
             case 'title': {
-                if (!title || !rule.pattern.test(title)) {
+                if (!title || !new RegExp(rule.pattern).test(title)) {
                     errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
                 }
                 break;
             }
             case 'body': {
-                if (!body || !rule.pattern.test(body)) {
+                if (!body || !new RegExp(rule.pattern).test(body)) {
                     errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
                 }
                 break;
             }
             case 'branch': {
-                if (!branch || !rule.pattern.test(branch)) {
+                if (!branch || !new RegExp(rule.pattern).test(branch)) {
                     errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
                 }
                 break;
