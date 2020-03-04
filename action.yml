@@ -21,7 +21,7 @@ inputs:
 
   comment-body:
     description: 'The message of the report, rendered below the table'
-    default: >   
+    default: |+
       I found **{{count}}** failures but please don't let this discourage you! Your effort is greatly appreciated and together we make sure that the codebase stays in awesome shape! :ok_hand:
 
       :pray: Before this PR can be reviewed, please resolve the above issues first. Thanks! 

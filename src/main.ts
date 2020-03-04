@@ -33,11 +33,11 @@ async function run () {
         Core.debug(`Found linting issues: ${results.length}`)
 
         let report = generateReport(results, args.comment.title, args.comment.intro, args.comment.body)
-            ?.replace('/{{title}}/g', pr?.title || 'null')
-            ?.replace('/{{body}}/g', pr?.body || 'null')
-            ?.replace('/{{branch}}/g', pr?.head?.ref || 'null')
-            ?.replace('/{{count}}/g', results.length.toString())
-            ?.replace('/{{commit}}/g', sha || 'null')
+            ?.replace(/{{title}}/g, pr?.title || 'null')
+            ?.replace(/{{body}}/g, pr?.body || 'null')
+            ?.replace(/{{branch}}/g, pr?.head?.ref || 'null')
+            ?.replace(/{{count}}/g, results.length.toString())
+            ?.replace(/{{commit}}/g, sha || 'null')
             
         // Check if we need to update or create an new comment.    
         // We do this is some steps;
