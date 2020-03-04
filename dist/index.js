@@ -893,23 +893,6 @@ module.exports = windowsRelease;
 
 /***/ }),
 
-/***/ 71:
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function assert(condition, msg) {
-    if (!condition) {
-        throw new Error(msg);
-    }
-}
-exports.default = assert;
-
-
-/***/ }),
-
 /***/ 82:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -2715,47 +2698,102 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const core = __importStar(__webpack_require__(470));
-const github_1 = __webpack_require__(469);
-const yaml = __importStar(__webpack_require__(414));
+const Core = __importStar(__webpack_require__(470));
+const GitHub = __importStar(__webpack_require__(469));
+const assert_1 = __importDefault(__webpack_require__(357));
 const markdown_table_1 = __importDefault(__webpack_require__(366));
-const assert_1 = __importDefault(__webpack_require__(71));
-const addFeedback_1 = __importDefault(__webpack_require__(342));
-const fetchContent_1 = __importDefault(__webpack_require__(730));
-const formatMessage_1 = __importDefault(__webpack_require__(930));
-const validate_1 = __importDefault(__webpack_require__(474));
-const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`;
+const config_1 = __importDefault(__webpack_require__(478));
+const FEEDBACK_INDICATOR = `<!-- ci_comment_type: body-lint -->\n`;
 function run() {
-    var _a;
+    var _a, _b, _c, _d, _e, _f;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const token = core.getInput('repo-token', { required: true });
-            const configPath = core.getInput('configuration-path', { required: true });
-            const reportTitle = core.getInput('report-title', { required: true });
-            const reportIntro = core.getInput('report-intro', { required: true });
-            const reportMessage = core.getInput('report-message', { required: true });
-            const prId = (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
-            assert_1.default(typeof prId === 'number', 'Could not get pull request number from context, exiting');
-            const client = new github_1.GitHub(token);
-            core.debug(`fetching config file ${configPath} for pr #${prId}`);
-            const configurationContent = yield fetchContent_1.default(client, configPath, github_1.context.repo.repo, github_1.context.repo.owner, github_1.context.sha);
-            const config = yaml.safeLoad(configurationContent);
-            const pr = github_1.context.payload.pull_request;
-            const errors = yield validate_1.default(config, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref);
-            let message = `${reportIntro}`;
-            if (errors.length > 0) {
-                message += `\n\n`;
-                message += markdown_table_1.default([['', reportTitle], ...errors.map(err => [':no_entry_sign:', err]),], { align: ['l', 'l'] });
+            const args = getArgs();
+            const pr = GitHub.context.payload.pull_request;
+            // This action can only work in PR context.
+            assert_1.default(typeof (pr === null || pr === void 0 ? void 0 : pr.number) === 'number', 'Could not get pull request number from context, exiting');
+            const { repo, owner } = GitHub.context.repo;
+            const { sha } = GitHub.context;
+            // We will use the github client for all our interactions with the github api.
+            const client = new GitHub.GitHub(args.authToken);
+            const config = yield config_1.default(client, args.configPath, repo, owner, sha);
+            const results = lint(config.rules, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, (_a = pr === null || pr === void 0 ? void 0 : pr.head) === null || _a === void 0 ? void 0 : _a.ref).map(error => error.replace(/^\s+|\s+$/g, ''));
+            let report = (_f = (_d = (_c = (_b = generateReport(results, args.comment.title, args.comment.intro, args.comment.content)) === null || _b === void 0 ? void 0 : _b.replace('{{title}}', (pr === null || pr === void 0 ? void 0 : pr.title) || 'null')) === null || _c === void 0 ? void 0 : _c.replace('{{body}}', (pr === null || pr === void 0 ? void 0 : pr.body) || 'null')) === null || _d === void 0 ? void 0 : _d.replace('{{branch}}', ((_e = pr === null || pr === void 0 ? void 0 : pr.head) === null || _e === void 0 ? void 0 : _e.ref) || 'null')) === null || _f === void 0 ? void 0 : _f.replace('{{commit}}', sha || 'null');
+            // Check if we need to update or create an new comment.    
+            // We do this is some steps;
+            //   1. get all comments and filter the comment based 
+            //      containing the indicator.
+            //   2. if it does not exist; create the comment
+            //   3. if it exist; update the comment.
+            const { data: comments } = yield client.issues.listComments({ owner, repo, 'issue_number': pr.number });
+            // will hold the comment id if there is a comment with 
+            // the given indicator
+            let commentId = null;
+            for (const comment of comments) {
+                // filter the comment based containing the indicator.
+                if (comment.body.includes(FEEDBACK_INDICATOR)) {
+                    commentId = comment.id;
+                    break;
+                }
             }
-            if (reportMessage) {
-                message += `\n\n${formatMessage_1.default(reportMessage, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, pr === null || pr === void 0 ? void 0 : pr.head.ref, github_1.context.sha)}`;
+            if (report === null) {
+                if (commentId !== null) {
+                    return client.issues.deleteComment({ 'comment_id': commentId, owner, repo });
+                }
             }
-            yield addFeedback_1.default(client, github_1.context.issue.number, github_1.context.issue.repo, github_1.context.issue.owner, FEEDBACK_INDICATOR, message);
+            else {
+                if (commentId === null) {
+                    return client.issues.createComment({ 'issue_number': pr.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` });
+                }
+                else {
+                    return client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` });
+                }
+            }
         }
         catch (error) {
-            core.setFailed(error.message);
+            Core.error(error);
+            Core.setFailed(error.message);
         }
     });
+}
+function getArgs() {
+    return {
+        authToken: Core.getInput('repo-token', { required: true }),
+        configPath: Core.getInput('configuration-path', { required: true }),
+        comment: {
+            title: Core.getInput('comment-title', { required: true }),
+            intro: Core.getInput('comment-intro', { required: true }),
+            content: Core.getInput('comment-content', { required: true }),
+        }
+    };
+}
+function generateReport(errors, header, intro, description) {
+    if (errors.length < 1) {
+        return null;
+    }
+    let report = intro;
+    report += `\n\n`;
+    report += `${markdown_table_1.default([['', header], ...errors.map(err => [':no_entry_sign:', err]),], {
+        align: ['l', 'l'],
+        padding: false
+    })}`;
+    report += `\n\n`;
+    report += description;
+    return report;
+}
+function lint(rules, title, body, branch) {
+    const errors = [];
+    for (const rule of rules) {
+        errors.push(checkRule(rule, title, body, branch));
+    }
+    return errors.filter(error => typeof error === "string");
+}
+function checkRule(rule, title, body, branch) {
+    switch (rule.target) {
+        case 'title': return (!title || !new RegExp(rule.pattern).test(title)) ? rule.message : null;
+        case 'body': return (!body || !new RegExp(rule.pattern).test(body)) ? rule.message : null;
+        case 'branch': return (!branch || !new RegExp(rule.pattern).test(branch)) ? rule.message : null;
+    }
 }
 run();
 
@@ -4971,55 +5009,6 @@ function hasLastPage (link) {
   deprecate(`octokit.hasLastPage() – You can use octokit.paginate or async iterators instead: https://github.com/octokit/rest.js#pagination.`)
   return getPageLinks(link).last
 }
-
-
-/***/ }),
-
-/***/ 342:
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-function addFeedback(client, issue_number, repo, owner, indicator, body) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Check if we need to update or create an new comment.    
-        // We do this is some steps;
-        //   1. get all comments and filter the comment based 
-        //      containing the indicator.
-        //   2. if it does not exist; create the comment
-        //   3. if it exist; update the comment.
-        const { data } = yield client.issues.listComments({ owner, repo, issue_number });
-        // will hold the comment id if there is a comment with 
-        // the given indicator
-        let comment_id = null;
-        for (const comment of data) {
-            // filter the comment based containing the indicator.
-            if (comment.body.includes(indicator)) {
-                comment_id = comment.id;
-                break;
-            }
-        }
-        if (comment_id === null) {
-            // 2. it does not exist; create the comment
-            return client.issues.createComment({ issue_number, owner, repo, body: `${indicator}\n\n${body}` });
-        }
-        else {
-            // 3. it exist; update the comment.
-            return client.issues.updateComment({ comment_id, owner, repo, body: `${indicator}\n\n${body}` });
-        }
-    });
-}
-exports.default = addFeedback;
 
 
 /***/ }),
@@ -10309,49 +10298,43 @@ function authenticationBeforeRequest(state, options) {
 
 /***/ }),
 
-/***/ 474:
+/***/ 478:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const formatMessage_1 = __importDefault(__webpack_require__(930));
-var ConfigRuleTarget;
-(function (ConfigRuleTarget) {
-    ConfigRuleTarget["TITLE"] = "title";
-    ConfigRuleTarget["BODY"] = "body";
-    ConfigRuleTarget["BRANCH"] = "branch";
-})(ConfigRuleTarget = exports.ConfigRuleTarget || (exports.ConfigRuleTarget = {}));
-function validate(config, title, body, branch) {
-    let errors = [];
-    for (const rule of config.rules) {
-        switch (rule.target) {
-            case 'title': {
-                if (!title || !new RegExp(rule.pattern).test(title)) {
-                    errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
-                }
-                break;
-            }
-            case 'body': {
-                if (!body || !new RegExp(rule.pattern).test(body)) {
-                    errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
-                }
-                break;
-            }
-            case 'branch': {
-                if (!branch || !new RegExp(rule.pattern).test(branch)) {
-                    errors = [...errors, formatMessage_1.default(rule.message, title, body, branch)];
-                }
-                break;
-            }
-        }
-    }
-    return errors;
+/*  eslint-disable @typescript-eslint/no-explicit-any */
+const assert_1 = __importDefault(__webpack_require__(357));
+const YAML = __importStar(__webpack_require__(414));
+function loadConfig(client, path, repo, owner, ref) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield client.repos.getContents({ owner, repo, path, ref });
+        const data = response.data;
+        assert_1.default(data.content !== null, `${path} does not exist`);
+        return YAML.safeLoad(Buffer.from(data.content, 'base64').toString());
+    });
 }
-exports.default = validate;
+exports.default = loadConfig;
 
 
 /***/ }),
@@ -12752,38 +12735,6 @@ module.exports = new Schema({
     __webpack_require__(100)
   ]
 });
-
-
-/***/ }),
-
-/***/ 730:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const assert_1 = __importDefault(__webpack_require__(71));
-function fetchContent(client, path, repo, owner, ref) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const response = yield client.repos.getContents({ owner, repo, path, ref });
-        const data = response.data; // eslint-disable-line @typescript-eslint/no-explicit-any
-        assert_1.default(data.content !== null, `${path} does not exist`);
-        return Buffer.from(data.content, 'base64').toString();
-    });
-}
-exports.default = fetchContent;
 
 
 /***/ }),
@@ -29208,25 +29159,6 @@ function hasNextPage (link) {
   deprecate(`octokit.hasNextPage() – You can use octokit.paginate or async iterators instead: https://github.com/octokit/rest.js#pagination.`)
   return getPageLinks(link).next
 }
-
-
-/***/ }),
-
-/***/ 930:
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function formatMessage(message, title, body, branch, commit) {
-    return message
-        .replace('{{title}}', title || 'null')
-        .replace('{{body}}', body || 'null')
-        .replace('{{branch}}', branch || 'null')
-        .replace('{{commit}}', commit || 'null')
-        .replace(/^\s+|\s+$/g, '');
-}
-exports.default = formatMessage;
 
 
 /***/ }),
