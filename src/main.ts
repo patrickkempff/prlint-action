@@ -78,7 +78,7 @@ function getArgs () {
         authToken: Core.getInput('repo-token', { required: true }),
         configPath: Core.getInput('configuration-path', { required: true }),
         comment: {
-            title: Core.getInput('comment-title', { required: true }),
+            title: Core.getInput('comment-report-header', { required: true }),
             intro: Core.getInput('comment-intro', { required: true }),
             content: Core.getInput('comment-content', { required: true }),
         }
