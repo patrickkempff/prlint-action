@@ -1,6 +1,0 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export default function assert(condition: any, msg?: string): asserts condition {
-    if (!condition) {
-        throw new Error(msg)
-    }
-}
