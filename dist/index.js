@@ -2707,58 +2707,51 @@ const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`;
 function run() {
     var _a, _b, _c, _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const args = getArgs();
-            const pr = GitHub.context.payload.pull_request;
-            // This action can only work in PR context.
-            assert_1.default(typeof (pr === null || pr === void 0 ? void 0 : pr.number) === 'number', 'Could not get pull request number from context, exiting');
-            const { repo, owner } = GitHub.context.repo;
-            const { sha } = GitHub.context;
-            // We will use the github client for all our interactions with the github api.
-            const client = new GitHub.GitHub(args.authToken);
-            const config = yield config_1.default(client, args.configPath, repo, owner, sha);
-            Core.debug('Linting');
-            const results = lint(config.rules, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, (_a = pr === null || pr === void 0 ? void 0 : pr.head) === null || _a === void 0 ? void 0 : _a.ref).map(error => error.replace(/^\s+|\s+$/g, ''));
-            Core.debug(`Found linting issues: ${results.length}`);
-            let report = (_g = (_f = (_d = (_c = (_b = generateReport(results, args.comment.title, args.comment.intro, args.comment.body)) === null || _b === void 0 ? void 0 : _b.replace(/{{title}}/g, (pr === null || pr === void 0 ? void 0 : pr.title) || 'null')) === null || _c === void 0 ? void 0 : _c.replace(/{{body}}/g, (pr === null || pr === void 0 ? void 0 : pr.body) || 'null')) === null || _d === void 0 ? void 0 : _d.replace(/{{branch}}/g, ((_e = pr === null || pr === void 0 ? void 0 : pr.head) === null || _e === void 0 ? void 0 : _e.ref) || 'null')) === null || _f === void 0 ? void 0 : _f.replace(/{{count}}/g, results.length.toString())) === null || _g === void 0 ? void 0 : _g.replace(/{{commit}}/g, sha || 'null');
-            // Check if we need to update or create an new comment.    
-            // We do this is some steps;
-            //   1. get all comments and filter the comment based 
-            //      containing the indicator.
-            //   2. if it does not exist; create the comment
-            //   3. if it exist; update the comment.
-            const { data: comments } = yield client.issues.listComments({ owner, repo, 'issue_number': pr.number });
-            // will hold the comment id if there is a comment with 
-            // the given indicator
-            let commentId = null;
-            Core.debug(`Already existing comment id: ${commentId}`);
-            for (const comment of comments) {
-                // filter the comment based containing the indicator.
-                if (comment.body.includes(FEEDBACK_INDICATOR)) {
-                    commentId = comment.id;
-                    break;
-                }
-            }
-            if (report === null) {
-                if (commentId !== null) {
-                    return client.issues.deleteComment({ 'comment_id': commentId, owner, repo });
-                }
-            }
-            else {
-                if (commentId === null) {
-                    const result = yield client.issues.createComment({ 'issue_number': pr.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` });
-                    return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`);
-                }
-                else {
-                    const result = yield client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` });
-                    return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`);
-                }
+        const args = getArgs();
+        const pr = GitHub.context.payload.pull_request;
+        // This action can only work in PR context.
+        assert_1.default(typeof (pr === null || pr === void 0 ? void 0 : pr.number) === 'number', 'Could not get pull request number from context, exiting');
+        const { repo, owner } = GitHub.context.repo;
+        const { sha } = GitHub.context;
+        // We will use the github client for all our interactions with the github api.
+        const client = new GitHub.GitHub(args.authToken);
+        const config = yield config_1.default(client, args.configPath, repo, owner, sha);
+        Core.debug('Linting');
+        const results = lint(config.rules, pr === null || pr === void 0 ? void 0 : pr.title, pr === null || pr === void 0 ? void 0 : pr.body, (_a = pr === null || pr === void 0 ? void 0 : pr.head) === null || _a === void 0 ? void 0 : _a.ref).map(error => error.replace(/^\s+|\s+$/g, ''));
+        Core.debug(`Found linting issues: ${results.length}`);
+        let report = (_g = (_f = (_d = (_c = (_b = generateReport(results, args.comment.title, args.comment.intro, args.comment.body)) === null || _b === void 0 ? void 0 : _b.replace(/{{title}}/g, (pr === null || pr === void 0 ? void 0 : pr.title) || 'null')) === null || _c === void 0 ? void 0 : _c.replace(/{{body}}/g, (pr === null || pr === void 0 ? void 0 : pr.body) || 'null')) === null || _d === void 0 ? void 0 : _d.replace(/{{branch}}/g, ((_e = pr === null || pr === void 0 ? void 0 : pr.head) === null || _e === void 0 ? void 0 : _e.ref) || 'null')) === null || _f === void 0 ? void 0 : _f.replace(/{{count}}/g, results.length.toString())) === null || _g === void 0 ? void 0 : _g.replace(/{{commit}}/g, sha || 'null');
+        // Check if we need to update or create an new comment.    
+        // We do this is some steps;
+        //   1. get all comments and filter the comment based 
+        //      containing the indicator.
+        //   2. if it does not exist; create the comment
+        //   3. if it exist; update the comment.
+        const { data: comments } = yield client.issues.listComments({ owner, repo, 'issue_number': pr.number });
+        // will hold the comment id if there is a comment with 
+        // the given indicator
+        let commentId = null;
+        Core.debug(`Already existing comment id: ${commentId}`);
+        for (const comment of comments) {
+            // filter the comment based containing the indicator.
+            if (comment.body.includes(FEEDBACK_INDICATOR)) {
+                commentId = comment.id;
+                break;
             }
         }
-        catch (error) {
-            Core.debug(`Got an error: ${error}`);
-            Core.error(error);
-            Core.setFailed(error.message || 'Unknown error');
+        if (report === null) {
+            if (commentId !== null) {
+                return client.issues.deleteComment({ 'comment_id': commentId, owner, repo });
+            }
+        }
+        else {
+            if (commentId === null) {
+                const result = yield client.issues.createComment({ 'issue_number': pr.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` });
+                return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`);
+            }
+            else {
+                const result = yield client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` });
+                return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`);
+            }
         }
     });
 }
@@ -2803,7 +2796,14 @@ function checkRule(rule, title, body, branch) {
         case 'branch': return (!branch || !new RegExp(rule.pattern).test(branch)) ? rule.message : null;
     }
 }
-run();
+try {
+    run();
+}
+catch (error) {
+    Core.debug(`Got an error: ${error}`);
+    Core.error(error);
+    Core.setFailed(error.message || 'Unknown error');
+}
 
 
 /***/ }),

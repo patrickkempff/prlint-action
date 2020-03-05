@@ -10,80 +10,72 @@ type Nullable<T> = T | null;
 const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`
 
 async function run () {
-    try {
-        const args = getArgs()
-        const pr = GitHub.context.payload.pull_request
+    const args = getArgs()
+    const pr = GitHub.context.payload.pull_request
+    
+    // This action can only work in PR context.
+    assert(typeof pr?.number === 'number', 'Could not get pull request number from context, exiting')  
+
+    const { repo, owner } = GitHub.context.repo
+    const { sha } = GitHub.context
+
+    // We will use the github client for all our interactions with the github api.
+    const client = new GitHub.GitHub(args.authToken)
+    const config = await loadConfig(client, args.configPath, repo, owner, sha)
+
+    Core.debug('Linting')
+
+    const results = lint(config.rules, pr?.title, pr?.body, pr?.head?.ref).map(error => 
+        error.replace(/^\s+|\s+$/g, '')
+    )
+
+    Core.debug(`Found linting issues: ${results.length}`)
+
+    let report = generateReport(results, args.comment.title, args.comment.intro, args.comment.body)
+        ?.replace(/{{title}}/g, pr?.title || 'null')
+        ?.replace(/{{body}}/g, pr?.body || 'null')
+        ?.replace(/{{branch}}/g, pr?.head?.ref || 'null')
+        ?.replace(/{{count}}/g, results.length.toString())
+        ?.replace(/{{commit}}/g, sha || 'null')
         
-        // This action can only work in PR context.
-        assert(typeof pr?.number === 'number', 'Could not get pull request number from context, exiting')  
+    // Check if we need to update or create an new comment.    
+    // We do this is some steps;
+    //   1. get all comments and filter the comment based 
+    //      containing the indicator.
+    //   2. if it does not exist; create the comment
+    //   3. if it exist; update the comment.
+    const { data: comments } = await client.issues.listComments({ owner, repo, 'issue_number': pr!.number })
 
-        const { repo, owner } = GitHub.context.repo
-        const { sha } = GitHub.context
+    // will hold the comment id if there is a comment with 
+    // the given indicator
+    let commentId: Nullable<number> = null
 
-        // We will use the github client for all our interactions with the github api.
-        const client = new GitHub.GitHub(args.authToken)
-        const config = await loadConfig(client, args.configPath, repo, owner, sha)
+    Core.debug(`Already existing comment id: ${commentId}`)
 
-        Core.debug('Linting')
-
-        const results = lint(config.rules, pr?.title, pr?.body, pr?.head?.ref).map(error => 
-            error.replace(/^\s+|\s+$/g, '')
-        )
-
-        Core.debug(`Found linting issues: ${results.length}`)
-
-        let report = generateReport(results, args.comment.title, args.comment.intro, args.comment.body)
-            ?.replace(/{{title}}/g, pr?.title || 'null')
-            ?.replace(/{{body}}/g, pr?.body || 'null')
-            ?.replace(/{{branch}}/g, pr?.head?.ref || 'null')
-            ?.replace(/{{count}}/g, results.length.toString())
-            ?.replace(/{{commit}}/g, sha || 'null')
-            
-        // Check if we need to update or create an new comment.    
-        // We do this is some steps;
-        //   1. get all comments and filter the comment based 
-        //      containing the indicator.
-        //   2. if it does not exist; create the comment
-        //   3. if it exist; update the comment.
-        const { data: comments } = await client.issues.listComments({ owner, repo, 'issue_number': pr!.number })
-
-        // will hold the comment id if there is a comment with 
-        // the given indicator
-        let commentId: Nullable<number> = null
-
-        Core.debug(`Already existing comment id: ${commentId}`)
-
-        for (const comment of comments) {
-            // filter the comment based containing the indicator.
-            if (comment.body.includes(FEEDBACK_INDICATOR)) {
-                commentId = comment.id
-                break
-            }
+    for (const comment of comments) {
+        // filter the comment based containing the indicator.
+        if (comment.body.includes(FEEDBACK_INDICATOR)) {
+            commentId = comment.id
+            break
         }
+    }
 
-        if (report === null) {
-            if (commentId !== null) {
-                return client.issues.deleteComment({ 'comment_id': commentId, owner, repo })
-            }
+    if (report === null) {
+        if (commentId !== null) {
+            return client.issues.deleteComment({ 'comment_id': commentId, owner, repo })
+        }
+    } else {
+        if (commentId === null) {
+            const result = await client.issues.createComment({ 'issue_number': pr!.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
+            
+            return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`)
         } else {
-            if (commentId === null) {
-                const result = await client.issues.createComment({ 'issue_number': pr!.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
-                
-                return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`)
-            } else {
-                const result = await client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
+            const result = await client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
 
-                return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`)
-            }
-        }     
-
-    } catch (error) {
-
-        Core.debug(`Got an error: ${error}`)
-
-        Core.error(error)
-        Core.setFailed(error.message || 'Unknown error')
-    }    
+            return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`)
+        }
+    }     
+  
 }
 
 
@@ -137,4 +129,11 @@ function checkRule (rule: LintRule, title?: string, body?: string, branch?: stri
     }
 }
 
-run()
+try {
+    run()
+} catch (error) {
+    Core.debug(`Got an error: ${error}`)
+
+    Core.error(error)
+    Core.setFailed(error.message || 'Unknown error')
+}  
