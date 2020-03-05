@@ -2757,7 +2757,7 @@ function run() {
         }
         catch (error) {
             Core.error(error);
-            Core.setFailed(error.message);
+            Core.setFailed(error.message || 'Unknown error');
         }
     });
 }
