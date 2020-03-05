@@ -7,17 +7,13 @@ inputs:
   configuration-path:
     description: 'The path for the pr lint configurations'
     default: '.github/prlint.yml'
-
   comment-table-header:
     description: 'The title of the report table'
     default: 'Fails'  
-
   comment-intro:
     description: 'The intro of the report, rendered above the table'
     default: |+
       :wave: Hi There! 
-
-      I am here to help you by making sure your PR meets our creteria for review :-). Everytime you make a change I will report back to you by updating this exact comment. 
 
   comment-body:
     description: 'The message of the report, rendered below the table'

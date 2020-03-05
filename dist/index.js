@@ -2756,6 +2756,7 @@ function run() {
             }
         }
         catch (error) {
+            Core.debug(`Got an error: ${error}`);
             Core.error(error);
             Core.setFailed(error.message || 'Unknown error');
         }
