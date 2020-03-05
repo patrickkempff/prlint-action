@@ -67,9 +67,13 @@ async function run () {
             }
         } else {
             if (commentId === null) {
-                return client.issues.createComment({ 'issue_number': pr!.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
+                const result = await client.issues.createComment({ 'issue_number': pr!.number, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
+                
+                return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`)
             } else {
-                return client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
+                const result = await client.issues.updateComment({ 'comment_id': commentId, owner, repo, 'body': `${FEEDBACK_INDICATOR}\n\n${report}` }) 
+
+                return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info.`)
             }
         }     
 
