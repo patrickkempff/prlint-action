@@ -14,10 +14,7 @@ async function run() {
   const pr = GitHub.context.payload.pull_request
 
   // This action can only work in PR context.
-  assert(
-    typeof pr?.number === 'number',
-    'Could not get pull request number from context, exiting'
-  )
+  assert(typeof pr?.number === 'number', 'Could not get pull request number from context, exiting')
 
   const {repo, owner} = GitHub.context.repo
   const {sha} = GitHub.context
@@ -28,21 +25,11 @@ async function run() {
 
   Core.debug('Linting')
 
-  const results = lint(
-    config.rules,
-    pr?.title,
-    pr?.body,
-    pr?.head?.ref
-  ).map(error => error.replace(/^\s+|\s+$/g, ''))
+  const results = lint(config.rules, pr?.title, pr?.body, pr?.head?.ref).map(error => error.replace(/^\s+|\s+$/g, ''))
 
   Core.debug(`Found linting issues: ${results.length}`)
 
-  let report = generateReport(
-    results,
-    args.comment.title,
-    args.comment.intro,
-    args.comment.body
-  )
+  let report = generateReport(results, args.comment.title, args.comment.intro, args.comment.body)
     ?.replace(/{{title}}/g, pr?.title || 'null')
     ?.replace(/{{body}}/g, pr?.body || 'null')
     ?.replace(/{{branch}}/g, pr?.head?.ref || 'null')
@@ -77,7 +64,7 @@ async function run() {
     }
   }
 
-  if (report === null) {
+  if (!report) {
     if (commentId !== null) {
       Core.debug(`Deleting comment with id: ${commentId}...`)
 
@@ -92,9 +79,7 @@ async function run() {
         body: `${FEEDBACK_INDICATOR}\n\n${report}`
       })
 
-      return Core.setFailed(
-        `This PR does not met the required rules. See ${result.data.url} for more info. (1)`
-      )
+      return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info. (1)`)
     } else {
       const result = await client.issues.updateComment({
         'comment_id': commentId,
@@ -103,9 +88,7 @@ async function run() {
         body: `${FEEDBACK_INDICATOR}\n\n${report}`
       })
 
-      return Core.setFailed(
-        `This PR does not met the required rules. See ${result.data.url} for more info. (2)`
-      )
+      return Core.setFailed(`This PR does not met the required rules. See ${result.data.url} for more info. (2)`)
     }
   }
 }
@@ -122,12 +105,7 @@ function getArgs() {
   }
 }
 
-function generateReport(
-  errors: string[],
-  header: string,
-  intro: string,
-  description: string
-): Nullable<string> {
+function generateReport(errors: string[], header: string, intro: string, description: string): Nullable<string> {
   if (!errors || errors.length < 1) {
     return null
   }
@@ -135,13 +113,10 @@ function generateReport(
   let report = intro
 
   report += `\n\n`
-  report += `${table(
-    [['', header], ...errors.map(err => [':no_entry_sign:', err])],
-    {
-      align: ['l', 'l'],
-      padding: false
-    }
-  )}`
+  report += `${table([['', header], ...errors.map(err => [':no_entry_sign:', err])], {
+    align: ['l', 'l'],
+    padding: false
+  })}`
   report += `\n\n`
   report += description
   report += `\n\n`
@@ -151,12 +126,7 @@ function generateReport(
   return report
 }
 
-function lint(
-  rules: LintRule[],
-  title?: string,
-  body?: string,
-  branch?: string
-): string[] {
+function lint(rules: LintRule[], title?: string, body?: string, branch?: string): string[] {
   const errors: Nullable<string>[] = []
 
   for (const rule of rules) {
@@ -166,23 +136,14 @@ function lint(
   return errors.filter(error => typeof error === 'string') as string[]
 }
 
-function checkRule(
-  rule: LintRule,
-  title?: string,
-  body?: string,
-  branch?: string
-): Nullable<string> {
+function checkRule(rule: LintRule, title?: string, body?: string, branch?: string): Nullable<string> {
   switch (rule.target) {
     case 'title':
-      return !title || !new RegExp(rule.pattern).test(title)
-        ? rule.message
-        : null
+      return !title || !new RegExp(rule.pattern).test(title) ? rule.message : null
     case 'body':
       return !body || !new RegExp(rule.pattern).test(body) ? rule.message : null
     case 'branch':
-      return !branch || !new RegExp(rule.pattern).test(branch)
-        ? rule.message
-        : null
+      return !branch || !new RegExp(rule.pattern).test(branch) ? rule.message : null
   }
 }
 

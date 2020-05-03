@@ -10,8 +10,5 @@ declare module 'markdown-table' {
     align?: MardownTableAlignOptions[]
   }
 
-  export default function(
-    data: string[][],
-    options: MardownTableOptions
-  ): string
+  export default function(data: string[][], options: MardownTableOptions): string
 }
