@@ -1,14 +1,17 @@
 declare module 'markdown-table' {
-    type MardownTableAlignOptions = 'l' | 'c' | 'r'
+  type MardownTableAlignOptions = 'l' | 'c' | 'r'
 
-    interface MardownTableOptions {
-        padding?: boolean
-        delimiterStart?: boolean
-        delimiterEnd?: boolean
-        alignDelimiters?: boolean
-        stringLength?: (s: string) => number
-        align?: MardownTableAlignOptions[]
-    }    
+  interface MardownTableOptions {
+    padding?: boolean
+    delimiterStart?: boolean
+    delimiterEnd?: boolean
+    alignDelimiters?: boolean
+    stringLength?: (s: string) => number
+    align?: MardownTableAlignOptions[]
+  }
 
-    export default function (data: string[][], options: MardownTableOptions): string
+  export default function(
+    data: string[][],
+    options: MardownTableOptions
+  ): string
 }
