@@ -2743,7 +2743,7 @@ function run() {
                 break;
             }
         }
-        if (report === null) {
+        if (!report) {
             if (commentId !== null) {
                 Core.debug(`Deleting comment with id: ${commentId}...`);
                 return client.issues.deleteComment({ 'comment_id': commentId, owner, repo });
@@ -2809,15 +2809,11 @@ function lint(rules, title, body, branch) {
 function checkRule(rule, title, body, branch) {
     switch (rule.target) {
         case 'title':
-            return !title || !new RegExp(rule.pattern).test(title)
-                ? rule.message
-                : null;
+            return !title || !new RegExp(rule.pattern).test(title) ? rule.message : null;
         case 'body':
             return !body || !new RegExp(rule.pattern).test(body) ? rule.message : null;
         case 'branch':
-            return !branch || !new RegExp(rule.pattern).test(branch)
-                ? rule.message
-                : null;
+            return !branch || !new RegExp(rule.pattern).test(branch) ? rule.message : null;
     }
 }
 try {
