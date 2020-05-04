@@ -2811,19 +2811,24 @@ function generateReport(errors, header, intro, description) {
 }
 function lint(rules, title, body, branch) {
     const errors = [];
+    Core.debug(`Linting data:`);
+    Core.debug(`title: ${title}`);
+    Core.debug(`body: ${body}`);
+    Core.debug(`branch: ${branch}`);
     for (const rule of rules) {
         errors.push(checkRule(rule, title, body, branch));
     }
     return errors.filter(error => typeof error === 'string');
 }
 function checkRule(rule, title, body, branch) {
+    const flags = rule.pattern_flags || 'g';
     switch (rule.target) {
         case 'title':
-            return !title || !new RegExp(rule.pattern).test(title) ? rule.message : null;
+            return !title || !new RegExp(rule.pattern, flags).test(title) ? rule.message : null;
         case 'body':
-            return !body || !new RegExp(rule.pattern).test(body) ? rule.message : null;
+            return !body || !new RegExp(rule.pattern, flags).test(body) ? rule.message : null;
         case 'branch':
-            return !branch || !new RegExp(rule.pattern).test(branch) ? rule.message : null;
+            return !branch || !new RegExp(rule.pattern, flags).test(branch) ? rule.message : null;
     }
 }
 try {

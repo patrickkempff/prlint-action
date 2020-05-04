@@ -140,6 +140,11 @@ function generateReport(errors: string[], header: string, intro: string, descrip
 function lint(rules: LintRule[], title?: string, body?: string, branch?: string): string[] {
   const errors: Nullable<string>[] = []
 
+  Core.debug(`Linting data:`)
+  Core.debug(`title: ${title}`)
+  Core.debug(`body: ${body}`)
+  Core.debug(`branch: ${branch}`)
+
   for (const rule of rules) {
     errors.push(checkRule(rule, title, body, branch))
   }
@@ -148,13 +153,15 @@ function lint(rules: LintRule[], title?: string, body?: string, branch?: string)
 }
 
 function checkRule(rule: LintRule, title?: string, body?: string, branch?: string): Nullable<string> {
+  const flags = rule.pattern_flags || 'g'
+
   switch (rule.target) {
     case 'title':
-      return !title || !new RegExp(rule.pattern).test(title) ? rule.message : null
+      return !title || !new RegExp(rule.pattern, flags).test(title) ? rule.message : null
     case 'body':
-      return !body || !new RegExp(rule.pattern).test(body) ? rule.message : null
+      return !body || !new RegExp(rule.pattern, flags).test(body) ? rule.message : null
     case 'branch':
-      return !branch || !new RegExp(rule.pattern).test(branch) ? rule.message : null
+      return !branch || !new RegExp(rule.pattern, flags).test(branch) ? rule.message : null
   }
 }
 
