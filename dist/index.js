@@ -2704,6 +2704,16 @@ const assert_1 = __importDefault(__webpack_require__(357));
 const markdown_table_1 = __importDefault(__webpack_require__(366));
 const config_1 = __importDefault(__webpack_require__(478));
 const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`;
+process.on('unhandledRejection', error => {
+    Core.debug(`Got an error: ${error}`);
+    if (error instanceof Error) {
+        Core.setFailed(error.message);
+        Core.error(error);
+    }
+    else {
+        Core.setFailed('Unknown error');
+    }
+});
 function run() {
     var _a, _b, _c, _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {

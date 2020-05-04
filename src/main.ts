@@ -9,6 +9,17 @@ import loadConfig, {LintRule} from './config'
 type Nullable<T> = T | null
 const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`
 
+process.on('unhandledRejection', error => {
+  Core.debug(`Got an error: ${error}`)
+
+  if (error instanceof Error) {
+    Core.setFailed(error.message)
+    Core.error(error)
+  } else {
+    Core.setFailed('Unknown error')
+  }
+})
+
 async function run() {
   const args = getArgs()
   const pr = GitHub.context.payload.pull_request
