@@ -9,7 +9,6 @@ export interface Config {
 
 export interface LintRule {
   pattern: RegExp
-  pattern_flags: string
   target: 'title' | 'body' | 'branch'
   message: string
 }
