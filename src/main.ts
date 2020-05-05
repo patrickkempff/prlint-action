@@ -6,6 +6,9 @@ import table from 'markdown-table'
 
 import loadConfig, {LintRule} from './config'
 
+
+const XRegExp = require('xregexp') // eslint-disable-line @typescript-eslint/no-var-requires
+
 type Nullable<T> = T | null
 const FEEDBACK_INDICATOR = `<!-- ci_comment_type: prlint-feedback -->\n`
 
@@ -154,16 +157,16 @@ function lint(rules: LintRule[], title?: string, body?: string, branch?: string)
   return errors.filter(error => typeof error === 'string') as string[]
 }
 
-function checkRule(rule: LintRule, title?: string, body?: string, branch?: string): Nullable<string> {
-  Core.debug(`${rule.target} = ${typeof rule.pattern} ${rule.pattern}`)
 
+
+function checkRule(rule: LintRule, title?: string, body?: string, branch?: string): Nullable<string> {
   switch (rule.target) {
     case 'title':
-      return !title || !new RegExp(rule.pattern).test(title) ? rule.message : null
+      return !title || !XRegExp(rule.pattern).test(title) ? rule.message : null
     case 'body':
-      return !body || !new RegExp(rule.pattern).test(body) ? rule.message : null
+      return !body || !XRegExp(rule.pattern).test(body) ? rule.message : null
     case 'branch':
-      return !branch || !new RegExp(rule.pattern).test(branch) ? rule.message : null
+      return !branch || !XRegExp(rule.pattern).test(branch) ? rule.message : null
   }
 }
 

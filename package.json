@@ -28,12 +28,14 @@
     "@actions/core": "^1.2.0",
     "@actions/github": "^2.1.1",
     "js-yaml": "^3.13.1",
-    "markdown-table": "^2.0.0"
+    "markdown-table": "^2.0.0",
+    "xregexp": "^4.3.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.23",
     "@types/js-yaml": "^3.12.2",
     "@types/node": "^13.7.7",
+    "@types/xregexp": "^4.3.0",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.8.0",
     "@zeit/ncc": "^0.20.5",
