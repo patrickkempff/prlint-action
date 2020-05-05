@@ -26,5 +26,5 @@ export default async function loadConfig(
 
   assert(data.content !== null, `${path} does not exist`)
 
-  return YAML.safeLoad(Buffer.from(data.content, 'base64').toString(), { schema: YAML.JSON_SCHEMA })
+  return YAML.load(Buffer.from(data.content, 'base64').toString())
 }
