@@ -10409,7 +10409,7 @@ function loadConfig(client, path, repo, owner, ref) {
         const response = yield client.repos.getContents({ owner, repo, path, ref });
         const data = response.data;
         assert_1.default(data.content !== null, `${path} does not exist`);
-        return YAML.safeLoad(Buffer.from(data.content, 'base64').toString());
+        return YAML.safeLoad(Buffer.from(data.content, 'base64').toString(), { schema: YAML.JSON_SCHEMA });
     });
 }
 exports.default = loadConfig;
