@@ -3724,6 +3724,7 @@ function lint(rules, title, body, branch) {
     return errors.filter(error => typeof error === 'string');
 }
 function checkRule(rule, title, body, branch) {
+    Core.debug(`pattern: '${rule.pattern}'`);
     switch (rule.target) {
         case 'title':
             return !title || !XRegExp(rule.pattern).test(title) ? rule.message : null;

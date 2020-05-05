@@ -157,9 +157,9 @@ function lint(rules: LintRule[], title?: string, body?: string, branch?: string)
   return errors.filter(error => typeof error === 'string') as string[]
 }
 
-
-
 function checkRule(rule: LintRule, title?: string, body?: string, branch?: string): Nullable<string> {
+  Core.debug(`pattern: '${rule.pattern}'`)
+
   switch (rule.target) {
     case 'title':
       return !title || !XRegExp(rule.pattern).test(title) ? rule.message : null
